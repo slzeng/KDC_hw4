@@ -56,10 +56,6 @@ for fileIndex = 0:9
    Q(5,5) = 1e-10;
    Q(6,6) = 1e-10;
 
-   % Q(4,4) = 1e-6;
-   % Q(5,5) = 1e-6;
-   % Q(6,6) = 1e-6;
-
    lastZ = X; % used to determine the linear and angular velocities for z
    % z = zeros(24,1);  % this will be modified.  I am setting its size only.
    z = markerData2;
@@ -67,9 +63,7 @@ for fileIndex = 0:9
    I = [1.571428571428571, 0, 0;
         0, 5.362637362637362, 0;
         0, 0, 7.065934065934067];
-   % I = [ 0.7833   -0.0001   -0.0009
-   %    -0.0001    0.1750     0.0003
-   %    -0.0009    0.0003    0.5965];
+
    % for each step we run the prediction equations first then the update
    % equations
 
@@ -92,25 +86,25 @@ for fileIndex = 0:9
       %X = A * xMinus1; % no Bu because there is no input
 
 
-      X = predictNewState(x(i,:)');
-      F = calculateJacobian(@predictNewState,13,13,X);
+      X = predictNewState(x(i,:)'); % predicted next state
+      F = calculateJacobian(@predictNewState,13,13,X); % the jacobian of the next state
 
-      P = F*P*F' + Q;
+      P = F*P*F' + Q;  % predicted covariance estimate
 
       % ########################
       % ### Update equations ###
       % ########################
-      H = calculateJacobian(@pose2markers02,13,24,X);
-      y(i,:) = z(i+1,:)' - pose2markers02(X);
-      S = H*P*H' + R;
-      K = P*H'*inv(S);
+      H = calculateJacobian(@pose2markers02,13,24,X); % the jacobian between the state and the markers
+      y(i,:) = z(i+1,:)' - pose2markers02(X); % the difference between what we measure and what we predict
+      S = H*P*H' + R;   % innovation (or residual) covariance
+      K = P*H'*inv(S); % the Kalman gain
 
-      x(i+1,:) = (X + K*y(i,:)')';
+      x(i+1,:) = (X + K*y(i,:)')';  % this is the current best estimate of the state
       clf
-      drawAlien02(pose2markers02(x(i,:)'),'k')
-      drawAlien02(pose2markers02(X),'r--')
-      drawAlien02(pose2markers02(x(i+1,:)'),'b')
-      drawAlien02(z(i+1,:)','g')
+      %drawAlien02(pose2markers02(x(i,:)'),'k') % the previous best estimate of the state is in black
+      %drawAlien02(pose2markers02(X),'r--') % the predicted state is in red and is dotted
+      drawAlien02(pose2markers02(x(i+1,:)'),'b') % the best estimate of the state is in blue
+      drawAlien02(z(i+1,:)','g') % the raw markers are in green.
       
       % indicate what frame it is processing
       frameString = ['Frame ' int2str(i)];

@@ -1,4 +1,4 @@
-% Part1.m
+% Part2.m
 clear
 
 
@@ -6,7 +6,7 @@ for fileIndex = 0:9
    clearvars -except fileIndex
    
    fileIndexString = int2str(fileIndex);
-   inFile = ['p1n0' fileIndexString]
+   inFile = ['p2n0' fileIndexString]
    
    fprintf('Processing %s\n', inFile);
    
@@ -31,7 +31,8 @@ for fileIndex = 0:9
    % The state is [x y z x' y' z' q0 q1 q2 q3 wx wy wz]  (1x13)
    markers = markerData{1};
 
-   [q,t] = markers2pose02(markers); % q: (1x4) t: (1x3)
+   [q,t] = markers2pose03(markers); % q: (1x4) t: (1x3)
+   
    X = [t 0 0 0 q 0 0 0];  % Current predicted state
    x = X;   % current best estimate of state
    xMinus1 = x;% last best estimate of state
@@ -56,10 +57,6 @@ for fileIndex = 0:9
    Q(5,5) = 1e-10;
    Q(6,6) = 1e-10;
 
-   % Q(4,4) = 1e-6;
-   % Q(5,5) = 1e-6;
-   % Q(6,6) = 1e-6;
-
    lastZ = X; % used to determine the linear and angular velocities for z
    % z = zeros(24,1);  % this will be modified.  I am setting its size only.
    z = markerData2;
@@ -67,9 +64,7 @@ for fileIndex = 0:9
    I = [1.571428571428571, 0, 0;
         0, 5.362637362637362, 0;
         0, 0, 7.065934065934067];
-   % I = [ 0.7833   -0.0001   -0.0009
-   %    -0.0001    0.1750     0.0003
-   %    -0.0009    0.0003    0.5965];
+
    % for each step we run the prediction equations first then the update
    % equations
 
@@ -78,10 +73,7 @@ for fileIndex = 0:9
 
    figure(1)
    clf
-   % set some limits on the figure to make sure we can see what is going on
-   xlim([-25,10])
-   ylim([-15,10])
-   zlim([-10,10])
+
       
    for i = 1:(numRows-1)
       % ############################
@@ -95,32 +87,38 @@ for fileIndex = 0:9
       %X = A * xMinus1; % no Bu because there is no input
 
 
-      X = predictNewState(x(i,:)');
-      F = calculateJacobian(@predictNewState,13,13,X);
+      X = predictNewState(x(i,:)'); % predicted next state
+      F = calculateJacobian(@predictNewState,13,13,X); % the jacobian of the next state
 
-      P = F*P*F' + Q;
+      P = F*P*F' + Q;  % predicted covariance estimate
 
       % ########################
       % ### Update equations ###
       % ########################
-      H = calculateJacobian(@pose2markers02,13,24,X);
-      y(i,:) = z(i+1,:)' - pose2markers02(X);
-      S = H*P*H' + R;
-      K = P*H'*inv(S);
+      H = calculateJacobian(@pose2markers02,13,24,X); % the jacobian between the state and the markers
+      y(i,:) = z(i+1,:)' - pose2markers02(X); % the difference between what we measure and what we predict
+      S = H*P*H' + R;   % innovation (or residual) covariance
+      K = P*H'*inv(S); % the Kalman gain
+      
+      K = adjustKalmanMatrixForDropouts(K,z(i+1,:)); % This didn't work
 
-      x(i+1,:) = (X + K*y(i,:)')';
+      x(i+1,:) = (X + K*y(i,:)')';  % this is the current best estimate of the state
       clf
-      drawAlien02(pose2markers02(x(i,:)'),'k')
-      drawAlien02(pose2markers02(X),'r--')
-      drawAlien02(pose2markers02(x(i+1,:)'),'b')
-      drawAlien02(z(i+1,:)','g')
-      % xlim([0,30])
-      % ylim([-30,0])
-      % zlim([-10,20])
+      %drawAlien02(pose2markers02(x(i,:)'),'k') % the previous best estimate of the state is in black
+      %drawAlien02(pose2markers02(X),'r--') % the predicted state is in red and is dotted
+      drawAlien02(pose2markers02(x(i+1,:)'),'b') % the best estimate of the state is in blue
+      drawAlien03(z(i+1,:)','g') % the raw markers are in green.
+      
+      % indicate what frame it is processing
+      frameString = ['Frame ' int2str(i)];
+      text(X(1)-1.5,X(2)-9,frameString);
+      
+      % Set some limits on the figure to make sure we can see what is going on
+      % This centers the alien within the figure 
+      xlim([X(1) - 10,X(1) + 10])
+      ylim([X(2) - 10,X(2) + 10])
+      zlim([X(3) - 10,X(3) + 10])
 
-      xlim([-25,10])
-      ylim([-15,10])
-      zlim([-10,10])
       drawnow
       % pause
 
@@ -140,17 +138,17 @@ for fileIndex = 0:9
    % Plot out our results
    figure('Position', [1, 100, 1800, 400],'Name',inFile,'NumberTitle','off');
    subplot(1,4,1);
-   plot(x(:,1:3))
-   subplot(1,4,2);
-   plot(x(:,4:6));
+   plot(x(:,1:3)) % position
+   subplot(1,4,2); 
+   plot(x(:,4:6)); % velocity
    subplot(1,4,3);
-   plot(x(:,7:10));
+   plot(x(:,7:10)); % quaternion
    subplot(1,4,4);
-   plot(x(:,11:13));
+   plot(x(:,11:13));  % angular velocity
    drawnow
    
    % Write our data to an output file.  
-   outFile = ['p1a0' fileIndexString];
+   outFile = ['p2a0' fileIndexString];
    outputFile = fopen(outFile,'w');
       for I = 1:numRows
          for J = 1:13
