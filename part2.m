@@ -6,7 +6,7 @@ for fileIndex = 0:9
    clearvars -except fileIndex
    
    fileIndexString = int2str(fileIndex);
-   inFile = ['p2n0' fileIndexString]
+   inFile = ['p2n0' fileIndexString];
    
    fprintf('Processing %s\n', inFile);
    
@@ -41,14 +41,11 @@ for fileIndex = 0:9
    % specified.  All future iterations will have it be calculated
    P = 0.1*eye(13); % last confidence matrix
 
-   % p = eye(13); % current confidence matrix
-
    K = zeros(13,24); % Kalman gain
 
-   % H = zeros(13); % model of sensors
    R = eye(24); % We may not need this
 
-   Q = 1e-5*eye(13);
+   Q = 1e-7*eye(13);
 
    Q(1,1) = 1e-10;
    Q(2,2) = 1e-10;
@@ -58,7 +55,7 @@ for fileIndex = 0:9
    Q(6,6) = 1e-10;
 
    lastZ = X; % used to determine the linear and angular velocities for z
-   % z = zeros(24,1);  % this will be modified.  I am setting its size only.
+
    z = markerData2;
 
    I = [1.571428571428571, 0, 0;
@@ -69,7 +66,6 @@ for fileIndex = 0:9
    % equations
 
    outputMatrix = repmat(X,numRows,1);
-   covs = [];
 
    figure(1)
    clf
@@ -80,21 +76,14 @@ for fileIndex = 0:9
       % ### Prediction equations ###
       % ############################
 
-      % figure out the new A matrix using our dynamic model from the last
-      % homework
-      % TODO:   Write function that calculates the A matrix
-      %A = calculateAmatrix(xMinus1);  % I think that this is what is needed
-      %X = A * xMinus1; % no Bu because there is no input
-
-
       X = predictNewState(x(i,:)'); % predicted next state
       F = calculateJacobian(@predictNewState,13,13,X); % the jacobian of the next state
-
       P = F*P*F' + Q;  % predicted covariance estimate
 
       % ########################
       % ### Update equations ###
       % ########################
+      
       H = calculateJacobian(@pose2markers02,13,24,X); % the jacobian between the state and the markers
       y(i,:) = z(i+1,:)' - pose2markers02(X); % the difference between what we measure and what we predict
       S = H*P*H' + R;   % innovation (or residual) covariance
@@ -120,13 +109,9 @@ for fileIndex = 0:9
       zlim([X(3) - 10,X(3) + 10])
 
       drawnow
-      % pause
 
-
-      % norm(x(i+1,11:13))
-      % pause
       P = (eye(length(X),length(X))-K*H)*P;
-      covs(i,:) = diag(P);
+
 
 
    end % of going through all of the frames

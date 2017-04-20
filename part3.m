@@ -49,7 +49,7 @@ for fileIndex = 0:9
    % H = zeros(13); % model of sensors
    R = eye(24); % We may not need this
 
-   Q = 1e-5*eye(13);
+   Q = 1e-7*eye(13);
 
    Q(1,1) = 1e-10;
    Q(2,2) = 1e-10;
@@ -161,7 +161,7 @@ for fileIndex = 0:9
    repositionedMarkers = zeros(size(x,1),24);
    for I = 1:size(x,1) % Go through every frame
       repositionedMarkers(I,:) = pose2markers03(x(I,:),actualMarkerPositions);
-%       % draw stuff to verify that I did things correctly.
+      % draw stuff to verify that I did things correctly.
 %       clf
 %       drawAlien02(z(I,:),'g');
 %       drawAlien02(repositionedMarkers(I,:),'b');
@@ -170,6 +170,8 @@ for fileIndex = 0:9
 %       zlim([x(I,3) - 10,x(I,3) + 10])
 %       drawnow
    end
+   
+   
    
    
 %    % Plot out our results
