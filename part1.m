@@ -30,6 +30,8 @@ for fileIndex = 0:9
    % initialize the state
    % The state is [x y z x' y' z' q0 q1 q2 q3 wx wy wz]  (1x13)
    markers = markerData{1};
+   
+   
 
    [q,t] = markers2pose02(markers); % q: (1x4) t: (1x3)
    X = [t 0 0 0 q 0 0 0];  % Current predicted state
